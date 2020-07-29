@@ -263,7 +263,7 @@ Array.prototype.myMap = function(callback, thisArg){
 #### reduce实现map、filter
 
 ```javascript
-// 主要是利用reduce含prev及cur，将prev作为存储结果的数组
+// map 主要是利用reduce含prev及cur，将prev作为存储结果的数组
 Array.prototype.myMap = function(callback, thisArg){
   return this.reduce((prev, cur, index, arr) => {
     prev.push(callback.call(thisArg, cur, index, arr))
@@ -274,7 +274,7 @@ Array.prototype.myMap = function(callback, thisArg){
 // filter相比map主要是判断是否需要推入结果数组
 Array.prototype.myFilter = function(callback, thisArg){
   return this.reduce((prev, cur, index, arr) => {
-    callback.call(thisArg, cur, index, arr)? prev.push(cur): null
+    if(callback.call(thisArg, cur, index, arr)) prev.push(cur)
     return prev
   },[])
 }
@@ -377,6 +377,19 @@ Array.prototype.distinct = function() {
 }
 ```
 
+#### 利用filter+indexOf+lastIndexOf
+
+```javascript
+Array.prototype.distinct = function(arr) {
+  // 利用filter过滤掉非唯一的值
+	return arr.filter(item => arr.indexOf(item) === arr.lastIndexOf(item))
+}
+```
+
+
+
+
+
 #### 双层循环
 
 ```javascript
@@ -446,5 +459,12 @@ arr.indexOf(item) !== arr.lastIndexOf(item)
 arr = [].slice.call(arrLike)
 arr = Array.prototype.slice(arrLike)
 arr = Array.from(arrLike)
+```
+
+#### 最值
+
+```javascript
+Math.max(...arr)
+arr.reduce((pre, cur) => Math.max(pre, cur))
 ```
 
