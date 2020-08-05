@@ -33,7 +33,7 @@
 #### 不会改变原数组
 - concat：连接数组，返回结果
     - array1.concat(array2,array3,...,arrayX)
-- join：将数组元素按指定字符拼接为字符串，默认以,间隔
+- join：将数组元素按指定字符拼接为字符串，默认以`,`间隔
     - array.join(separator)
 - slice：将指定起始和终止位置之间的片断切出来返回
     - array.slice(start, end)
