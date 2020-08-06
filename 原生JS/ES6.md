@@ -94,6 +94,8 @@ const注意点
 - **遍历 Map 结构**：for (let [key, value] of map)  直接取键值
 - **输入模块的指定方法**：从模块中导出部分方法，类似对象的解构
 
+---
+
 ### 字符串、正则、数值扩展
 
 字符串
@@ -239,7 +241,124 @@ const注意点
 - Object.assign()：用于合并对象，将多个对象的属性合并成一个对象，如果有重复则后者覆盖前者
   - 第一个参数为目标对象，后面均为源对象
   - 首参数非对象先转成对象，无法转则跳过，非首参的，不能转化对象直接报错（null、undefined）
-- 
+  - 如果只有一个参数，则直接返回该参数，如果非对象，则转成对象
+  - 数值、字符串和布尔值）不在首参数，也不会报错，只有字符串以数组形式拷入，其他的直接忽略
+  - 该方法等于浅拷贝
+- Object.getOwnPropertyDescriptors()：返回指定对象所有自身属性（非继承属性）的描述对象
+- `__proto__`：用来读取或设置当前对象的原型对象（prototype）
+- Object.setPrototypeOf：Object.setPrototypeOf(object, prototype)，作用与`__proto__`相同，用来设置一个对象的原型对象（prototype），返回参数对象本身
+- Object.setPrototypeOf：Object.getPrototypeOf(obj)，用于读取一个对象的原型对象
+- `Object.keys`：返回一个数组，成员是参数对象自身的（不含继承的）所有可遍历（enumerable）属性的键名
+- `Object.values`：返回一个数组，成员是参数对象自身的（不含继承的）所有可遍历（enumerable）属性的键值，会过滤属性名为 Symbol 值的属性
+- `Object.entries()`：返回一个数组，成员是参数对象自身的（不含继承的）所有可遍历（enumerable）属性的键值对数组
+- `Object.fromEntries()`方法是`Object.entries()`的逆操作，用于将一个键值对数组转为对象
+
+---
+
+### Symbol
+
+ES5 的对象属性名都是字符串，容易造成属性名的冲突，`Symbol`，表示独一无二的值。它是 JavaScript 语言的第七种数据类型，let s = Symbol()，直接typeof检测，不能new
+
+`Symbol`函数可以接受一个字符串作为参数，表示对 Symbol 实例的描述，主要是为了在控制台显示，或者转为字符串时，比较容易区分
+
+Symbol值不能与其他类型的值进行运算，但是可以显示转成字符串或者布尔值
+
+Symbol值可以做对象的属性名，但是只能用`[]`来表示，不能用点运算法
+
+想获取对象Symbol键名：
+
+- Object.getOwnPropertySymbols() ：可以获取所有 Symbol 属性名
+- Reflect.ownKeys()：可以返回所有类型的键名，包括常规键名和 Symbol 键名
+
+创建symbol
+
+- 正常创建：`let s = Symbol()`
+- 创建带描述的Symbol：`let s = Symbol('foo')`
+- 创建相同值的Symbol：`let s1 = Symbol.for('foo')`，以foo为key创建Symbol，如果已经有同名的key，则取已经存在的值
+  - 获取Symbol的key值，let s1 = Symbol.for("foo");    Symbol.keyFor(s1) // "foo"
+
+---
+
+### Set和Map
+
+Set
+
+ES6 提供了新的数据结构 Set。它类似于数组，但是成员的值都是唯一的，没有重复的值
+
+- 去重：数组 [...new Set(array)]     字符串 [...new Set('ababbc')].join('')
+- Set内部判断重复是以===判断，所以会NaN = NaN
+
+实例属性：
+
+- `Set.prototype.constructor`：构造函数，默认就是`Set`函数
+- `Set.prototype.size`：返回`Set`实例的成员总数
+
+方法：
+
+- `Set.prototype.add(value)`：添加某个值，返回 Set 结构本身
+- `Set.prototype.delete(value)`：删除某个值，返回一个布尔值，表示删除是否成功
+- `Set.prototype.has(value)`：返回一个布尔值，表示该值是否为`Set`的成员
+- `Set.prototype.clear()`：清除所有成员，没有返回值
+
+遍历：由于Set无键名，只有键值，所以keys和values返回一致
+
+- `Set.prototype.keys()`：返回键名的遍历器
+- `Set.prototype.values()`：返回键值的遍历器
+- `Set.prototype.entries()`：返回键值对的遍历器
+- `Set.prototype.forEach()`：使用回调函数遍历每个成员
+- 扩展运算符
+
+WeakSet
+
+WeakSet相比于Set，区别：
+
+- 成员只能是对象，
+- WeakSet中引用为弱引用，即垃圾回收机制不考虑其中引用
+
+方法
+
+- **WeakSet.prototype.add(value)**：向 WeakSet 实例添加一个新成员
+- **WeakSet.prototype.delete(value)**：清除 WeakSet 实例的指定成员
+- **WeakSet.prototype.has(value)**：返回一个布尔值，表示某个值是否在 WeakSet 实例之中
+
+Map
+
+JS中的对象本质是键值对的集合（Hash结构），但是传统上只能用字符串当键，Map不受此限制
+
+键名相同时，后者会覆盖前者；由于键名可以为对象，需要注意以**对象为键名时内存地址不同并不是同一个值**，即为两个键
+
+- Map 的键实际上是跟内存地址绑定的，只要内存地址不一样，就视为两个键。这就解决了同名属性碰撞（clash）的问题
+
+实例属性：
+
+- `size`：属性返回 Map 结构的成员总数
+- `Map.prototype.set(key, value)`： `set`方法设置键名`key`对应的键值为`value`，然后返回整个 Map 结构，重复设置同key值会更新
+- `Map.prototype.get(key)`：get`方法读取`key`对应的键值，如果找不到`key`，返回`undefined
+- `Map.prototype.has(key)`：`has`方法返回一个布尔值，表示某个键是否在当前 Map 对象之中
+- `Map.prototype.delete(key)`：delete`方法删除某个键，返回`true`。如果删除失败，返回`false
+- `Map.prototype.clear()`：`clear`方法清除所有成员，没有返回值
+
+遍历（同set）
+
+- `Map.prototype.keys()`：返回键名的遍历器
+- `Map.prototype.values()`：返回键值的遍历器
+- `Map.prototype.entries()`：返回所有成员的遍历器
+- `Map.prototype.forEach()`：遍历 Map 的所有成员
+
+| 数据结构转换 | 转                               | 转Map                        |
+| ------------ | -------------------------------- | ---------------------------- |
+| 数组         | 扩展运算符                       | new Map( arr )               |
+| 对象         | let [k,v] of strMap； obj[k] = v | new Map(Object.entries(obj)) |
+| JSON         | JSON.stringify                   | JSON.parse                   |
+
+WeakMap（深拷贝，考虑循环引用时使用）
+
+结构如同Map，但区别
+
+- 只接受对象作为键名（null除外）
+- 弱引用，不计入垃圾回收机制
+- 无遍历操作，也没size属性
+- 无法清空，不支持clear方法
 
 
 

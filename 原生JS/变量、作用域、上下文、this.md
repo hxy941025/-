@@ -137,7 +137,6 @@ Function.prototype.myBind = function(context, args1){
   return function Fn(args2){
     // 当构造函数时，new会新生成一个对象将this绑定上去
     if(this instanceof Fn) return new _this(...args1, ...args2)
-    // 
     return _this.apply(context, [...args1, ...args2])
   }
 }
