@@ -360,5 +360,271 @@ WeakMap（深拷贝，考虑循环引用时使用）
 - 无遍历操作，也没size属性
 - 无法清空，不支持clear方法
 
+---
 
+### Proxy
 
+Proxy 用于修改某些操作的默认行为，等同于在语言层面做出修改，可以理解成，在目标对象之前架设一层“拦截”，外界对该对象的访问，都必须先通过这层拦截，因此提供了一种机制，可以对外界的访问进行过滤和改写。
+
+```javascript
+var obj = new Proxy({}, {
+  get: function (target, propKey, receiver) {
+    console.log(`getting ${propKey}!`);
+    return Reflect.get(target, propKey, receiver);
+  },
+  set: function (target, propKey, value, receiver) {
+    console.log(`setting ${propKey}!`);
+    return Reflect.set(target, propKey, value, receiver);
+  }
+});
+// var proxy = new Proxy(target, handler);
+// target参数表示所要拦截的目标对象，handler参数也是一个对象，用来定制拦截行为
+```
+
+Proxy支持的拦截操作（具体介绍见 阮一峰ES6）
+
+- **get(target, propKey, receiver)**：拦截对象属性的读取，比如`proxy.foo`和`proxy['foo']`
+- **set(target, propKey, value, receiver)**：拦截对象属性的设置，比如`proxy.foo = v`或`proxy['foo'] = v`，返回一个布尔值
+- **has(target, propKey)**：拦截`propKey in proxy`的操作，返回一个布尔值
+- **deleteProperty(target, propKey)**：拦截`delete proxy[propKey]`的操作，返回一个布尔值
+- **ownKeys(target)**：拦截`Object.getOwnPropertyNames(proxy)`、`Object.getOwnPropertySymbols(proxy)`、`Object.keys(proxy)`、`for...in`循环，返回一个数组。该方法返回目标对象所有自身的属性的属性名，而`Object.keys()`的返回结果仅包括目标对象自身的可遍历属性
+- **getOwnPropertyDescriptor(target, propKey)**：拦截`Object.getOwnPropertyDescriptor(proxy, propKey)`，返回属性的描述对象
+- **defineProperty(target, propKey, propDesc)**：拦截`Object.defineProperty(proxy, propKey, propDesc）`、`Object.defineProperties(proxy, propDescs)`，返回一个布尔值
+- **preventExtensions(target)**：拦截`Object.preventExtensions(proxy)`，返回一个布尔值
+- **getPrototypeOf(target)**：拦截`Object.getPrototypeOf(proxy)`，返回一个对象
+- **isExtensible(target)**：拦截`Object.isExtensible(proxy)`，返回一个布尔值
+- **setPrototypeOf(target, proto)**：拦截`Object.setPrototypeOf(proxy, proto)`，返回一个布尔值。如果目标对象是函数，那么还有两种额外操作可以拦截
+- **apply(target, object, args)**：拦截 Proxy 实例作为函数调用的操作，比如`proxy(...args)`、`proxy.call(object, ...args)`、`proxy.apply(...)`
+- **construct(target, args)**：拦截 Proxy 实例作为构造函数调用的操作，比如`new proxy(...args)`
+
+Proxy.revocable()
+
+- 返回一个可取消的Proxy实例，let {proxy, revoke} = Proxy.revocable(target, handler)
+- 该对象的`proxy`属性是`Proxy`实例，`revoke`属性是一个函数，可以取消`Proxy`实例
+- `Proxy.revocable()`的一个使用场景是，目标对象不允许直接访问，必须通过代理访问，一旦访问结束，就收回代理权，不允许再次访问
+
+this问题
+
+- 在 Proxy 代理的情况下，目标对象内部的`this`关键字会指向 Proxy 代理
+
+```javascript
+const target = {
+  m: function () {
+    console.log(this === proxy);
+  }
+};
+const handler = {};
+
+const proxy = new Proxy(target, handler);
+
+target.m() // false
+proxy.m()  // true
+// 一旦proxy代理target.m，后者内部的this就是指向proxy，而不是target
+```
+
+---
+
+### Reflect
+
+也是 ES6 为了操作对象而提供的新 API，设计目的如下
+
+- 将`Object`对象的一些明显属于语言**内部的方法**（比如`Object.defineProperty`），放到`Reflect`对象上
+- **修改某些`Object`方法的返回结果**，让其变得更合理，比如Object.defineProperty(obj, name, desc)`在无法定义属性时，会抛出一个错误，而`Reflect.defineProperty(obj, name, desc)`则会返回`false
+-  让`Object`**操作都变成函数行为**。某些`Object`操作是命令式，比如`name in obj`和`delete obj[name]`，而`Reflect.has(obj, name)`和`Reflect.deleteProperty(obj, name)`让它们变成了函数行为
+- `Reflect`对象的方法与`Proxy`对象的方法一一对应，只要是`Proxy`对象的方法，就能在`Reflect`对象上找到对应的方法，即**Reflect会保存Proxy代理前的原方法**
+
+静态方法：
+
+- 一共13个静态方法，与Proxy一一对应
+
+Proxy实现观察者模式（ES6入门上的例子）
+
+```javascript
+const person = observable({
+  name: '张三',
+  age: 20
+});
+
+function print() {
+  console.log(`${person.name}, ${person.age}`)
+}
+
+observe(print);
+person.name = '李四';
+// person是观察目标，函数print是观察者
+// 李四, 20
+
+// proxy实现
+const queuedObservers = new Set();  //观察者队列
+
+const observe = fn => queuedObservers.add(fn);  //添加观察者函数
+const observable = obj => new Proxy(obj, {set});  // 代理观察目标
+
+function set(target, key, value, receiver) {  //对象 name属性 值 this绑定receiver
+  const result = Reflect.set(target, key, value, receiver); //代理
+  queuedObservers.forEach(observer => observer()); //触发观察者，逐个执行
+  return result;
+}
+```
+
+---
+
+### Iterator
+
+JS中四种"集合"数据结构：数组、对象、Map、Set
+
+遍历器Iterator是一种接口，为各种不同的数据结构提供统一的访问机制，任何数据结构只要部署Iterator接口，就可以完成遍历操作
+
+Iterator 的作用有三个：
+
+- 为各种数据结构，提供一个统一的、简便的访问接口
+- 使得数据结构的成员能够按某种次序排列
+- 提供ES6的for of循环消费
+
+Iterator遍历过程：
+
+- 创建一个指针对象，指向当前数据结构的起始位置；遍历器对象本质就是个指针
+- 第一次调用指针对象的next方法，可以将指针指向数据结构的第一个成员
+- 第二次调用next，指针指向数据结构的第二个成员
+- 不断调用指针对象的next方法，直到它指向数据结构的结束位置
+
+ES6规定，默认的Iterator接口部署在数据结构的**Symbol.iterator**属性，一个数据结构只要具有`Symbol.iterator`属性，就可以认为是“可遍历的”（iterable）
+
+```javascript
+let arr = ['a', 'b', 'c'];
+let iter = arr[Symbol.iterator]();
+
+iter.next() // { value: 'a', done: false }
+iter.next() // { value: 'b', done: false }
+iter.next() // { value: 'c', done: false }
+iter.next() // { value: undefined, done: true }
+```
+
+调用Iterator接口的场合
+
+- 解构赋值：对数组和Set进行解构赋值时，会默认调用Symbol.iterator方法
+- 扩展运算符：扩展运算符（...）也会调用默认的 Iterator 接口
+- yield\*：`yield*`后面跟的是一个可遍历的结构，它会调用该结构的遍历器接口
+- 其他场合：for of、Array from、Map、Set、Promise.all()、Promise.race()
+
+---
+
+### Promise、Generator
+
+见异步
+
+---
+
+### Class
+
+ES6引入Class，为了使生成对象更接近面向对象语言，让对象原型的写法更加清晰、更像面向对象编程的语法，完全可以看作构造函数的另一种写法
+
+```javascript
+class Point {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+  }
+
+  toString() {
+    return '(' + this.x + ', ' + this.y + ')';
+  }
+}
+// 等同于
+Point.prototype = {
+  constructor() {},
+  toString() {}
+};
+```
+
+- 在类的实例上调用方法，其实就是调用原型上的方法
+- 由于类的方法都定义在`prototype`对象上面，所以类的新方法可以添加在`prototype`对象上面
+- 类.prototype.constructor === 类
+- 类内部所有定义的方法，都是不可枚举的，不能通过Object.keys获取，但是原型链上的可以
+
+`constructor`
+
+- 是类的默认方法，通过`new`命令生成对象实例时，自动调用该方法，如果没有显示定义，则会默认添加一个空的constructor
+- `constructor`方法默认返回实例对象（即`this`），完全可以指定返回另外一个对象，在其中返回一个新建对象，就会断开原型链
+
+类的实例
+
+- 如果实例的属性不是直接定义在this上，则都是定义在原型链上，hasOwnProperty访问不到
+- 与 ES5 一样，类的所有实例共享一个原型对象
+- 可以通过实例`__proto__`来为实例添加方法
+
+取值getter和存值setter
+
+- 与 ES5 一样，在“类”的内部可以使用`get`和`set`关键字，对某个属性设置存值函数和取值函数，拦截该属性的存取行为
+
+- ```javascript
+  class MyClass {
+    constructor() {
+      // ...
+    }
+    get prop() {
+      return 'getter';
+    }
+    set prop(value) {
+      console.log('setter: '+value);
+    }
+  }
+  ```
+
+注意点：
+
+- 类和模块的内部，**默认就是严格模式**，所以不需要`use strict`
+- 类不同于函数声明，**不存在变量提升**
+- name属性总是返回紧跟class关键字后面的类名
+- 类中的某个方法之前加`*`，就表示该方法是一个Generator函数
+- 类的方法内部this默认执行类的实例，但是如果单独通过解构将方法提出，this则指向undefined
+  - 将此方法写在构造方法中，this.fn = this.fn.bind(this)，来绑定this
+  - 写在构造方法中，使用箭头函数 this.getThis = () => this
+  - Proxy，使用`Proxy`，获取方法的时候，自动绑定`this`
+
+静态方法
+
+- 该类私有的方法，不会被实例继承，在方法前加上static关键字即静态方法
+- 静态方法需要直接通过类来调用，实例无法获取该方法
+- 静态方法中的this，指向类，而不是实例
+- 父类的静态方法，可以被子类继承，也可以在子类super对象上调用
+
+静态属性
+
+- 在class内部，static 属性名 即定义内部静态属性
+- 可以直接通过类名访问
+
+私有属性和方法
+
+- class内部，属性、方法名前加上`#`表示该属性私有
+- 加了`#`的变量和没加的同名变量是两个变量
+
+new.target属性（new.target 顾名思义就是new后面是谁）
+
+- 该属性一般用在构造函数之中，返回`new`命令作用于的那个构造函数
+
+- 如果构造函数不是通过`new`命令或`Reflect.construct()`调用的，`new.target`会返回`undefined`
+
+- 子类继承父类时，new.target会返回子类，可以利用此特性实现一个必须继承后才能使用的类
+
+  ```javascript
+  class Shape {
+    constructor() {
+      if (new.target === Shape) {
+        throw new Error('本类不能实例化');
+      }
+    }
+  }
+  
+  class Rectangle extends Shape {
+    constructor(length, width) {
+      super();
+      // ...
+    }
+  }
+  
+  var x = new Shape();  // 直接父类实例化 报错
+  var y = new Rectangle(3, 4);  // 继承后的子类实例化 正确
+  ```
+
+  
