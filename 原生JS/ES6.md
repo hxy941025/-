@@ -1,3 +1,9 @@
+### ES6常见新特性
+
+let/Const、箭头函数、模板字符串、解构赋值、函数参数默认值/Rest参数、扩展运算符、Map Set、Proxy、Reflect、Symbols、Promise、Iterator+For of、Generators、Class
+
+---
+
 ### let var const
 
 主要区别：
@@ -542,7 +548,7 @@ Point.prototype = {
 - 类.prototype.constructor === 类
 - 类内部所有定义的方法，都是不可枚举的，不能通过Object.keys获取，但是原型链上的可以
 
-`constructor`
+**constructor**
 
 - 是类的默认方法，通过`new`命令生成对象实例时，自动调用该方法，如果没有显示定义，则会默认添加一个空的constructor
 - `constructor`方法默认返回实例对象（即`this`），完全可以指定返回另外一个对象，在其中返回一个新建对象，就会断开原型链
@@ -627,4 +633,62 @@ new.target属性（new.target 顾名思义就是new后面是谁）
   var y = new Rectangle(3, 4);  // 继承后的子类实例化 正确
   ```
 
-  
+  ---
+
+### Class 继承
+
+```javascript
+class ColorPoint extends Point {
+constructor(x, y, color) {
+super(x, y); // 调用父类的constructor(x, y)
+this.color = color;
+}
+
+toString() {
+return this.color + ' ' + super.toString(); // 调用父类的toString()
+}
+}
+```
+
+Class 可以通过`extends`关键字实现继承，子类必须在constructor中调用super方法，否则子类就得不到this
+
+- ES6的继承，实质是先将父类实例对象的属性和方法，加到`this`上面（所以必须先调用`super`方法），然后再用子类的构造函数修改`this`
+- ES5 的继承，实质是先创造子类的实例对象`this`，然后再将父类的方法添加到`this`上面（`Parent.apply(this)`）
+
+继承后子类中不显式定义constructor方法的话，子类会自动定义，且在其中调用super
+
+如果在super之前调用this，会报错，因为子类实例的构建基于父类实例，只有`super`方法才能调用父类实例
+
+class继承，同样可以用`Object.getPrototypeOf`方法可以用来从子类上获取父类
+
+**super 关键字**
+
+作为函数使用时：
+
+```javascript
+class A {}
+
+class B extends A {
+  constructor() {
+    super();
+  }
+}
+```
+
+- `super`作为函数调用时，代表父类的构造函数。ES6 要求，子类的构造函数必须执行一次`super`函数
+- `super`虽然代表了父类`A`的构造函数，但是返回的是子类`B`的实例，即`super`内部的`this`指的是`B`的实例，因此`super()`在这里相当于`A.prototype.constructor.call(this)`
+- 作为函数时，`super()`只能用在子类的构造函数之中，用在其他地方就会报错
+
+作为对象时：
+
+- `super`作为对象时，在普通方法中，指向父类的原型对象；在静态方法中，指向父类（可以看做类似this的一个指针，代表父类）
+  - 在子类普通方法中通过`super`调用父类的方法时，方法内部的`this`指向当前的子类实例
+    - 由于`this`指向子类实例，所以如果通过`super`对某个属性赋值，这时`super`就是`this`，赋值的属性会变成子类实例的属性
+    - 但是如果直接读super.name，获取的则是父类原型对象上的name属性，返回undefined
+  - 在子类的静态方法中通过`super`调用父类的方法时，方法内部的`this`指向当前的子类，而不是子类的实例
+- 由于`super`指向父类的原型对象，所以定义在父类实例上的方法或属性（绑定this），是无法通过`super`调用的
+
+Class的prototype和`__proto__`
+
+相比ES5继承，class继承多一条继承链，即子类的`__proto__`指向对应的构造函数prototype属性
+
