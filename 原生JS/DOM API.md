@@ -98,3 +98,14 @@ nodeType：节点的类型
   - remove(value)：删除类名
   - toggle(value)：如果列表中已经该类名，则删除，不存在则添加
 
+![image-20200813150554813](/Users/hxy_nuc/Library/Application Support/typora-user-images/image-20200813150554813.png)
+
+- getAttribute：获取元素行间属性
+- setAttribute：设置元素行间属性
+- removeAttribute：删除元素行间属性
+- clientWidth/clientHeight：获取元素宽高（不计算边框）
+- offsetWidth/offsetHeight：获取元素宽高，带边框
+- offsetTop: 获取当前元素外边框相对于父级内边框的高度
+- document.documentElement.ClientWidth：获取可视区宽度
+- document.documentElement.ClientHeight：获取可视区高度
+- 使元素在页面中左右居中：拿到document的ClientWidth和元素的offsetWidth做差再/2，赋值给元素的left 
