@@ -307,8 +307,6 @@ Array.prototype.myReduce = function(callback, initVal){
 
 
 
-
-
 ---
 
 ### 手写数组扁平化
@@ -316,6 +314,7 @@ Array.prototype.myReduce = function(callback, initVal){
 #### 手写实现flat
 
 ```javascript
+// 递归写法
 // 默认参数为1
 Array.prototype.myFlat = function(num=1){
   // 首先判读调用对象是否为数组
@@ -345,12 +344,22 @@ Array.prototype.myFlat = function(num=1){
 #### reduce实现数组扁平化
 
 ```javascript
-function fn(arr) {
+function flatten(arr) {
   return arr.reduce(prev, curt) => {
     // 递归扁平化
-    return prev.concat(Array.isArray(curt)? fn(curt): curt)
+    return prev.concat(Array.isArray(curt)? flatten(curt): curt)
   },[]}
 ```
+#### 迭代实现数组扁平化
+
+```javascript
+function flatten(arr){
+  while(arr.some((item) => Array.isArray(item))) arr = [].concat(...arr)
+  return arr
+}
+```
+
+
 
 ---
 
